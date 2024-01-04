@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
+name: Check Rust
+on:
+  push:
+    branches: ["main", "v*"]
+    # Also run on tag pushes, as the release.yml doesn't currently run tests
+    tags: ["v*"]
+    paths-ignore:
+      - ".plugin-manifests/**"
+      - "LICENSE"
+  pull_request:
+    branches: ["main", "v*"]
+    paths-ignore:
+      - ".plugin-manifests/**"
+      - "LICENSE"
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: 1.73
+jobs:
+  lint-rust:
+    name: Lint Rust
+    runs-on: "ubuntu-latest"
+    steps:
+      # install dependencies
+      - name: Install latest Rust stable toolchain
+        shell: bash
+        run: |
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup default ${{ env.RUST_VERSION }}
+
+      - name: "Install Wasm Rust target"
+        run: rustup target add wasm32-wasi && rustup target add wasm32-unknown-unknown
+        shell: bash
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "${{ runner.os }}-full-${{ hashFiles('./Cargo.lock') }}"
+
+      - uses: actions/checkout@v3
+
+      - name: Cargo Format
+        run:
+          cargo fmt --all -- --check
+
+      - name: Cargo Clippy
+        run:
+          cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+  build-rust:
+    name: Build plugin
+    runs-on: ${{ matrix.os }}
+    needs: [lint-rust]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      # install dependencies
+      - name: Install latest Rust stable toolchain
+        shell: bash
+        run: |
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup default ${{ env.RUST_VERSION }}
+      - name: "Install Wasm Rust target"
+        run: rustup target add wasm32-wasi && rustup target add wasm32-unknown-unknown
+        shell: bash
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "${{ runner.os }}-full-${{ hashFiles('./Cargo.lock') }}"
+
+      - uses: actions/checkout@v3
+
+      - name: Cargo Build
+        run: cargo build --workspace --release --all-targets --all-features
+        env:
+          CARGO_INCREMENTAL: 0
+
+  test-rust:
+    name: Plugin Unit Tests
+    runs-on: ${{ matrix.os }}
+    needs: [lint-rust]
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      # install dependencies
+      - name: Install latest Rust stable toolchain
+        shell: bash
+        run: |
+          rustup toolchain install ${{ env.RUST_VERSION }} --component clippy --component rustfmt
+          rustup default ${{ env.RUST_VERSION }}
+      - name: "Install Wasm Rust target"
+        run: rustup target add wasm32-wasi && rustup target add wasm32-unknown-unknown
+        shell: bash
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "${{ runner.os }}-full-${{ hashFiles('./Cargo.lock') }}"
+
+      - uses: actions/checkout@v3
+
+      - name: Cargo Unit Tests
+        run: |
+          cargo test --all --no-fail-fast -- --nocapture
+        env:
+          CARGO_INCREMENTAL: 0
+          RUST_LOG: trace

@@ -1,0 +1,4 @@
+target/
+
+nomad-*.tar.gz
+nomad.json

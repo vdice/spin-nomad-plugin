@@ -1,0 +1,51 @@
+job "{{ job_name }}" {
+  datacenters = ["dc1"]
+
+  // For now, set a unique value here to force-recreate the job (and force-pull the reference).
+  // Once we ensure the reference is specified via its digest, we can remove this artifice.
+  meta {
+    run_uuid = "${uuidv4()}"
+  }
+
+  group "{{ job_name }}" {
+    network {
+      port "http" {}
+    }
+    task "{{ job_name }}" {
+      // TODO: use exec and spin artifact if not local -- or use regardless but send in os/arch
+      driver = "raw_exec"
+
+      service {
+        name     = "{{ job_name }}"
+        port     = "http"
+        provider = "consul"
+        tags = [
+          "traefik.enable=true",
+          "traefik.http.routers.{{ job_name }}.rule=Host(`{{ job_name }}.local.fermyon.link`)"
+        ]
+        check {
+          name     = "healthy"
+          type     = "http"
+          path     = "/.well-known/spin/health"
+          interval = "10s"
+          timeout  = "2s"
+        }
+      }
+
+      env = {
+        RUST_LOG = "warn,spin=debug"
+        SPIN_LOG_DIR = "${NOMAD_TASK_DIR}"
+      }
+
+      config {
+        command = "spin"
+        args = [
+          "up",
+          "--listen", "${NOMAD_ADDR_http}",
+          "--from-registry", "{{ oci_reference }}",
+          "{{ insecure }}"
+        ]
+      }
+    }
+  }
+}
