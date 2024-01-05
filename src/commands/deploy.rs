@@ -195,7 +195,7 @@ impl DeployCommand {
         data.insert("job_name", &name);
         data.insert("oci_reference", &reference);
         if self.insecure {
-            data.insert("insecure", "-k");
+            data.insert("insecure", "\"-k\",");
         }
         let job_hcl_text = handlebars.render("job", &data).unwrap();
 

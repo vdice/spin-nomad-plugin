@@ -41,9 +41,11 @@ job "{{ job_name }}" {
         command = "spin"
         args = [
           "up",
-          "--listen", "${NOMAD_ADDR_http}",
-          "--from-registry", "{{ oci_reference }}",
-          "{{ insecure }}"
+          {{{ insecure }}}
+          "--listen",
+          "${NOMAD_ADDR_http}",
+          "--from-registry",
+          "{{ oci_reference }}"
         ]
       }
     }

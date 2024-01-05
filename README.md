@@ -41,8 +41,10 @@ If you're running Nomad via the local [Fermyon Platform project](https://github.
 then deployment of an app from your local workstation can be done like so:
 
 ```sh
-spin nomad deploy
+spin nomad deploy -k
 ```
+
+> The `-k` flag is necessary when the registry runs unsecured on http, eg `registry.local.fermyon.link`
 
 If you're already using a separate, publicly available OCI registry (eg DockerHub, GHCR, etc) for publishing your app, you would
 first publish and then deploy using the published reference:
