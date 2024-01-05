@@ -52,7 +52,7 @@ spin registry push vdice/hello:0.1.0
 spin nomad deploy --from-registry vdice/hello:0.1.0
 ```
 
-A different Nomad addres can be supplied like so:
+A different Nomad address can be supplied like so:
 
 ```sh
 spin nomad deploy --nomad-addr http://my.nomad.cluster:4646
