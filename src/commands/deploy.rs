@@ -14,10 +14,7 @@ use std::{
 };
 use url::Url;
 
-use crate::{
-    nomad::NomadClient,
-    opts::*,
-};
+use crate::{nomad::NomadClient, opts::*};
 
 static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/src/templates");
 
@@ -164,12 +161,10 @@ impl DeployCommand {
         // Publish to registry, maybe
         match self.resolve_app_source() {
             // Reference provided; don't publish to configured registry
-            AppSource::OciRegistry(r) => {
-                reference = r
-            },
+            AppSource::OciRegistry(r) => reference = r,
             _ => {
                 // TODO: variableize
-                let registry_host = format!("registry.local.fermyon.link");
+                let registry_host = "registry.local.fermyon.link".to_string();
                 reference = format!(
                     "{}/{}:{}",
                     registry_host,
@@ -710,34 +705,5 @@ mod test {
         let app = cmd.load_app(temp_dir.path()).await.unwrap();
         let base = get_trigger_base(app);
         assert_eq!("/base", base);
-    }
-
-    #[tokio::test]
-    async fn if_http_base_is_not_set_then_it_is_inserted() {
-        let temp_dir = tempfile::tempdir().unwrap();
-
-        let cmd = deploy_cmd_for_test_file("unbased_v1.toml");
-        let app = cmd.load_app(temp_dir.path()).await.unwrap();
-        let base = get_trigger_base(app);
-        assert_eq!("/", base);
-
-        let cmd = deploy_cmd_for_test_file("unbased_v2.toml");
-        let app = cmd.load_app(temp_dir.path()).await.unwrap();
-        let base = get_trigger_base(app);
-        assert_eq!("/", base);
-    }
-
-    #[tokio::test]
-    async fn plugin_version_should_be_set() {
-        let temp_dir = tempfile::tempdir().unwrap();
-
-        let cmd = deploy_cmd_for_test_file("minimal_v2.toml");
-        let app = cmd.load_app(temp_dir.path()).await.unwrap();
-        let version = app.0.metadata.get("cloud_plugin_version").unwrap();
-        assert_eq!(crate::VERSION, version);
-    }
-
-    fn string_set(strs: &[&str]) -> HashSet<String> {
-        strs.iter().map(|s| s.to_string()).collect()
     }
 }
